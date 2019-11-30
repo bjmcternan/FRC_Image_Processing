@@ -1,2 +1,2 @@
-# FRC_image_processing
- Test app to find a FRC ball in an image
+# FRC_Image_Processing
+ Python test app used to find an FRC ball in an image
