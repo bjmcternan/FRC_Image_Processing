@@ -12,8 +12,8 @@ class GripPipeline:
         """initializes all values to presets or None if need to be set
         """
 
-        self.__resize_image_width = 480.0
-        self.__resize_image_height = 640.0
+        self.__resize_image_width = 640.0
+        self.__resize_image_height = 480.0
         self.__resize_image_interpolation = cv2.INTER_CUBIC
 
         self.resize_image_output = None
@@ -21,17 +21,20 @@ class GripPipeline:
         self.__hsv_threshold_input = self.resize_image_output
         self.__hsv_threshold_hue = [0.0, 180.0]
         self.__hsv_threshold_saturation = [0.0, 255.0]
-        self.__hsv_threshold_value = [128.41726618705036, 255.0]
+        self.__hsv_threshold_value = [0.0, 180.0]
 
         self.hsv_threshold_output = None
 
         self.__find_blobs_input = self.hsv_threshold_output
-        self.__find_blobs_min_area = 5130.0
+        self.__find_blobs_min_area = 2500.0
         self.__find_blobs_circularity = [0.0, 1.0]
-        self.__find_blobs_dark_blobs = True
+        self.__find_blobs_dark_blobs = False
 
         self.find_blobs_output = None
 
+
+    def setThreshold (self, val):
+        self.__hsv_threshold_value = val
 
     def process(self, source0):
         """
