@@ -12,25 +12,17 @@ class GripPipeline:
         """initializes all values to presets or None if need to be set
         """
 
-        self.__resize_image_width = 640.0
-        self.__resize_image_height = 480.0
-        self.__resize_image_interpolation = cv2.INTER_CUBIC
+        self.__blur_type = BlurType.Gaussian_Blur
+        self.__blur_radius = 6.306306306306306
 
-        self.resize_image_output = None
+        self.blur_output = None
 
-        self.__hsv_threshold_input = self.resize_image_output
-        self.__hsv_threshold_hue = [0.0, 180.0]
+        self.__hsv_threshold_input = self.blur_output
+        self.__hsv_threshold_hue = [0.0, 137.2244006827852]
         self.__hsv_threshold_saturation = [0.0, 255.0]
-        self.__hsv_threshold_value = [0.0, 180.0]
+        self.__hsv_threshold_value = [77.96762589928058, 255.0]
 
         self.hsv_threshold_output = None
-
-        self.__find_blobs_input = self.hsv_threshold_output
-        self.__find_blobs_min_area = 2500.0
-        self.__find_blobs_circularity = [0.0, 1.0]
-        self.__find_blobs_dark_blobs = False
-
-        self.find_blobs_output = None
 
 
     def setThreshold (self, val):
@@ -40,31 +32,36 @@ class GripPipeline:
         """
         Runs the pipeline and sets all outputs to new values.
         """
-        # Step Resize_Image0:
-        self.__resize_image_input = source0
-        (self.resize_image_output) = self.__resize_image(self.__resize_image_input, self.__resize_image_width, self.__resize_image_height, self.__resize_image_interpolation)
+        # Step Blur0:
+        self.__blur_input = source0
+        (self.blur_output) = self.__blur(self.__blur_input, self.__blur_type, self.__blur_radius)
 
         # Step HSV_Threshold0:
-        self.__hsv_threshold_input = self.resize_image_output
+        self.__hsv_threshold_input = self.blur_output
         (self.hsv_threshold_output) = self.__hsv_threshold(self.__hsv_threshold_input, self.__hsv_threshold_hue, self.__hsv_threshold_saturation, self.__hsv_threshold_value)
-
-        # Step Find_Blobs0:
-        self.__find_blobs_input = self.hsv_threshold_output
-        (self.find_blobs_output) = self.__find_blobs(self.__find_blobs_input, self.__find_blobs_min_area, self.__find_blobs_circularity, self.__find_blobs_dark_blobs)
 
 
     @staticmethod
-    def __resize_image(input, width, height, interpolation):
-        """Scales and image to an exact size.
+    def __blur(src, type, radius):
+        """Softens an image using one of several filters.
         Args:
-            input: A numpy.ndarray.
-            Width: The desired width in pixels.
-            Height: The desired height in pixels.
-            interpolation: Opencv enum for the type fo interpolation.
+            src: The source mat (numpy.ndarray).
+            type: The blurType to perform represented as an int.
+            radius: The radius for the blur as a float.
         Returns:
-            A numpy.ndarray of the new size.
+            A numpy.ndarray that has been blurred.
         """
-        return cv2.resize(input, ((int)(width), (int)(height)), 0, 0, interpolation)
+        if(type is BlurType.Box_Blur):
+            ksize = int(2 * round(radius) + 1)
+            return cv2.blur(src, (ksize, ksize))
+        elif(type is BlurType.Gaussian_Blur):
+            ksize = int(6 * round(radius) + 1)
+            return cv2.GaussianBlur(src, (ksize, ksize), round(radius))
+        elif(type is BlurType.Median_Filter):
+            ksize = int(2 * round(radius) + 1)
+            return cv2.medianBlur(src, ksize)
+        else:
+            return cv2.bilateralFilter(src, -1, round(radius), round(radius))
 
     @staticmethod
     def __hsv_threshold(input, hue, sat, val):
@@ -80,31 +77,6 @@ class GripPipeline:
         out = cv2.cvtColor(input, cv2.COLOR_BGR2HSV)
         return cv2.inRange(out, (hue[0], sat[0], val[0]),  (hue[1], sat[1], val[1]))
 
-    @staticmethod
-    def __find_blobs(input, min_area, circularity, dark_blobs):
-        """Detects groups of pixels in an image.
-        Args:
-            input: A numpy.ndarray.
-            min_area: The minimum blob size to be found.
-            circularity: The min and max circularity as a list of two numbers.
-            dark_blobs: A boolean. If true looks for black. Otherwise it looks for white.
-        Returns:
-            A list of KeyPoint.
-        """
-        params = cv2.SimpleBlobDetector_Params()
-        params.filterByColor = 1
-        params.blobColor = (0 if dark_blobs else 255)
-        params.minThreshold = 10
-        params.maxThreshold = 220
-        params.filterByArea = True
-        params.minArea = min_area
-        params.filterByCircularity = True
-        params.minCircularity = circularity[0]
-        params.maxCircularity = circularity[1]
-        params.filterByConvexity = False
-        params.filterByInertia = False
-        detector = cv2.SimpleBlobDetector_create(params)
-        return detector.detect(input)
 
-
+BlurType = Enum('BlurType', 'Box_Blur Gaussian_Blur Median_Filter Bilateral_Filter')
 
