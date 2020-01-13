@@ -1,9 +1,10 @@
 import cv2
+import numpy as np
 
 # Definitions
 USE_WEBCAM = False
 ASSET_LOC = "assets\\example_images\\"
-IMAGE_LOC = ASSET_LOC + "BlueGoal-132in-Center.jpg"
+IMAGE_LOC = ASSET_LOC + "BlueGoal-108in-Center.jpg"
 
 # Initial Filter Values
 hue = [50.0, 96.0]
@@ -26,9 +27,18 @@ def createThresholdWindows():
     cv2.createTrackbar("ContourThreshold1", "Parameters", 150,255,empty)
     cv2.createTrackbar("ContourThreshold2", "Parameters", 255,255,empty)
 
+def drawContours(img, contours):
+    for c in contours:
+        # get the bounding rect
+        x, y, w, h = cv2.boundingRect(c)
+        # draw a green rectangle to visualize the bounding rect
+        cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 255), 2)
+        cv2.line(img, ((int)(w/2+x-10), (int)(h/2+y-10)), ((int)(w/2+x+10), (int)(h/2+y+10)), (255,0,255), 4)
+        cv2.line(img, ((int)(w/2+x+10), (int)(h/2+y-10)), ((int)(w/2+x-10), (int)(h/2+y+10)), (255,0,255), 4)
 
 def processImage(img):
     # Get parameters from slider window "Parameters"
+    imgCopy = img.copy()
     thresh1 = cv2.getTrackbarPos("ContourThreshold1", "Parameters")
     thresh2 = cv2.getTrackbarPos("ContourThreshold2", "Parameters")
     hueMin = cv2.getTrackbarPos("hueMin", "Parameters")
@@ -45,11 +55,12 @@ def processImage(img):
     # Convert image to HSV and filter based off of hue, sat, and val
     imgColorFilter = cv2.inRange(cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV), (hueMin, satMin, valMin),  (hueMax, satMax, valMax))
     # Run Canny contour detector to find contours in image
-    imgCanny = cv2.Canny(imgColorFilter, thresh1, thresh2)
+    #imgCanny = cv2.Canny(imgColorFilter, thresh1, thresh2)
+    contours, hierarchy = cv2.findContours(imgColorFilter, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    drawContours(imgCopy, contours)
     # Show output
-    cv2.imshow("blur", imgBlur)
-    cv2.imshow("filter", imgColorFilter)
-    cv2.imshow("Canny", imgCanny)
+    previewImg = np.concatenate((imgColorFilter, imgCopy), axis=1)
+    cv2.imshow("Contours", previewImg)
     output = imgColorFilter
     return output
 
