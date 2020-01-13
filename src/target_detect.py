@@ -5,7 +5,7 @@ USE_WEBCAM = False
 ASSET_LOC = "assets\\example_images\\"
 IMAGE_LOC = ASSET_LOC + "BlueGoal-132in-Center.jpg"
 
-# Filter Values
+# Initial Filter Values
 hue = [50.0, 96.0]
 sat = [100.0, 255.0]
 val = [78.0, 255.0]
@@ -14,6 +14,7 @@ def empty(a):
     pass
 
 def createThresholdWindows():
+    # Setup window to hold paramteres sliders
     cv2.namedWindow("Parameters")
     cv2.resizeWindow("Parameters", 640,640)
     cv2.createTrackbar("hueMin", "Parameters", (int)(hue[0]),180,empty)
@@ -27,7 +28,7 @@ def createThresholdWindows():
 
 
 def processImage(img):
-    
+    # Get parameters from slider window "Parameters"
     thresh1 = cv2.getTrackbarPos("ContourThreshold1", "Parameters")
     thresh2 = cv2.getTrackbarPos("ContourThreshold2", "Parameters")
     hueMin = cv2.getTrackbarPos("hueMin", "Parameters")
@@ -37,10 +38,15 @@ def processImage(img):
     valMin = cv2.getTrackbarPos("valMin", "Parameters")
     valMax = cv2.getTrackbarPos("valMax", "Parameters")
     
+    # Resize image to make workspace smaller 
     imgResize = cv2.resize(img, (640,480), 0, 0, cv2.INTER_CUBIC)
+    # Slightly blur imaage to get rid of some noise 
     imgBlur = cv2.GaussianBlur(imgResize, (7,7), 1)
+    # Convert image to HSV and filter based off of hue, sat, and val
     imgColorFilter = cv2.inRange(cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV), (hueMin, satMin, valMin),  (hueMax, satMax, valMax))
+    # Run Canny contour detector to find contours in image
     imgCanny = cv2.Canny(imgColorFilter, thresh1, thresh2)
+    # Show output
     cv2.imshow("blur", imgBlur)
     cv2.imshow("filter", imgColorFilter)
     cv2.imshow("Canny", imgCanny)
@@ -53,22 +59,25 @@ def main():
         cv2.namedWindow("preview")
         vc = cv2.VideoCapture(0)
 
-        if vc.isOpened(): # try to get the first frame
+        if vc.isOpened(): 
+            # try to get the first frame
             rval, frame = vc.read()
         else:
             rval = False
     else:
+        # read image from disk
         frame = cv2.imread(IMAGE_LOC)
         rval = True
 
     while rval:
         if USE_WEBCAM:
             rval, frame = vc.read()
-            
+        
+        # Process image
         outImg = processImage(frame)
 
         key = cv2.waitKey(20)
-        if key != -1: # exit on ESC
+        if key != -1: # exit on any key press
             break
     cv2.destroyWindow("preview")
 
